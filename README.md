@@ -108,8 +108,12 @@ Recommended rclone choices:
 - Backend/type: `iclouddrive`
 - Service: `drive`
 
+The remote name matters. The upload command defaults to `icloud`; if you choose
+a different remote name, pass it later with `--remote your-name`.
+
 Follow rclone's prompts for your Apple ID, password, and any two-factor/session
-steps.
+steps. If device-push two-factor authentication fails, re-run setup and enter
+`sms` at rclone's 2FA prompt to request a text-message code.
 
 After setup, verify it:
 
@@ -188,6 +192,18 @@ ios-filedrop setup
 ```
 
 and update the existing `icloud` remote.
+
+### iCloud two-factor authentication fails
+
+rclone may print a long Apple JSON error if device-push two-factor
+authentication fails. Re-run:
+
+```bash
+ios-filedrop setup
+```
+
+When rclone asks for a two-factor code, enter `sms` to request a text-message
+code, then enter that SMS code when prompted.
 
 ## License
 

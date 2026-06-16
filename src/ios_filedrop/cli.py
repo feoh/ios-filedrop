@@ -151,13 +151,20 @@ def setup(
     print("  service: drive")
     print()
     print("Your Apple credentials/session will be stored in that config file, not ~/.config.")
-    subprocess.run(  # noqa: S603 - intentionally runs rclone for interactive config.
+    result = subprocess.run(  # noqa: S603 - intentionally runs rclone for interactive config.
         [rclone, "config"],
-        check=True,
+        check=False,
         env=rclone_env(config_path),
     )
     if config_path.exists():
         config_path.chmod(0o600)
+    if result.returncode != 0:
+        fail(
+            "rclone setup did not complete successfully. See the rclone output above. "
+            "If this happened during Apple two-factor authentication, try running "
+            "`ios-filedrop setup` again and request an SMS code by entering `sms` "
+            "at rclone's 2FA prompt."
+        )
 
 
 @app.command
