@@ -195,15 +195,21 @@ and update the existing `icloud` remote.
 
 ### iCloud two-factor authentication fails
 
-rclone may print a long Apple JSON error if device-push two-factor
-authentication fails. Re-run:
+rclone may print a long Apple JSON error if device-push or SMS two-factor
+authentication fails, even when Apple's response says the code was valid.
+
+If `ios-filedrop check` reports a missing iCloud trust token, try rclone's
+reconnect flow with the isolated config file:
 
 ```bash
-ios-filedrop setup
+RCLONE_CONFIG=~/.local/state/ios-filedrop/rclone.conf \
+  rclone config reconnect icloud:
 ```
 
-When rclone asks for a two-factor code, enter `sms` to request a text-message
-code, then enter that SMS code when prompted.
+If reconnect still fails during 2FA, the failure is in rclone's iCloud Drive
+authentication flow. In that case, the practical workaround is to use another
+rclone backend that is visible in the iOS Files app, such as Dropbox, OneDrive,
+Google Drive, or WebDAV, and pass that remote with `--remote`.
 
 ## License
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import posixpath
+import shlex
 import shutil
 import subprocess
 import sys
@@ -129,6 +130,21 @@ def list_remote_files(*, remote: str, folder: str, config_path: Path) -> set[str
     return {line.strip().rstrip("/") for line in result.stdout.splitlines() if line.strip()}
 
 
+def format_called_process_error(error: subprocess.CalledProcessError) -> str:
+    """Format a subprocess error without losing captured rclone output."""
+    if isinstance(error.cmd, list):
+        command = " ".join(shlex.quote(str(part)) for part in error.cmd)
+    else:
+        command = str(error.cmd)
+
+    message_parts = [f"command failed with exit code {error.returncode}: {command}"]
+    if error.stderr:
+        message_parts.append(error.stderr.strip())
+    if error.stdout:
+        message_parts.append(error.stdout.strip())
+    return "\n".join(part for part in message_parts if part)
+
+
 def fail(message: str) -> NoReturn:
     """Exit with a CLI-friendly error message."""
     print(f"Error: {message}", file=sys.stderr)
@@ -187,11 +203,14 @@ def check(
     if remote not in remote_names:
         fail(f"Remote {remote!r} was not found in {config_path}. Run `ios-filedrop setup`.")
 
-    run_rclone(
-        ["lsf", "--max-depth", "1", remote_path(remote)],
-        config_path=config_path,
-        capture_output=True,
-    )
+    try:
+        run_rclone(
+            ["lsf", "--max-depth", "1", remote_path(remote)],
+            config_path=config_path,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError as error:
+        fail(format_called_process_error(error))
     print(f"remote: {remote} OK")
 
 
@@ -235,8 +254,10 @@ def upload(
         print(f"Uploaded {file} to {destination}")
         if chosen_name != desired_name:
             print(f"Destination name changed to avoid a collision: {chosen_name}")
-    except (IosFiledropError, subprocess.CalledProcessError) as error:
+    except IosFiledropError as error:
         fail(str(error))
+    except subprocess.CalledProcessError as error:
+        fail(format_called_process_error(error))
 
 
 def main() -> None:
